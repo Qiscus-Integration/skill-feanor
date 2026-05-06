@@ -1,0 +1,13 @@
+{
+  "name": "qiscus-plugins",
+  "owner": {
+    "name": "Qiscus Integration"
+  },
+  "plugins": [
+    {
+      "name": "skill-feanor",
+      "source": ".",
+      "description": "Frontend-focused pre-push code review for HTML, JS, TS, JSX, Vue, and ERB"
+    }
+  ]
+}

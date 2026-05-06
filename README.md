@@ -52,22 +52,27 @@ One-time setup per repository. Installs the git pre-push hook and optionally cre
 
 ### 1. Install the plugin into Claude Code
 
-Clone this repo and load it into Claude Code using the `--plugin-dir` flag:
+Inside Claude Code, run `/plugin list`, then add this marketplace source:
 
+```
+Qiscus-Integration/skill-feanor
+```
+
+Once the marketplace is added, install the plugin:
+
+```
+/plugin install skill-feanor@qiscus-plugins
+```
+
+That's it — no cloning required. Claude Code fetches it directly from GitHub.
+
+**Alternative (manual install):**
 ```bash
 git clone https://github.com/Qiscus-Integration/skill-feanor.git
 claude --plugin-dir ./skill-feanor
 ```
 
-To load it automatically on every session, add it to your Claude Code settings:
-
-```json
-{
-  "pluginDirectories": ["/path/to/skill-feanor"]
-}
-```
-
-Alternatively, download `skill-feanor.plugin` from the [Releases](https://github.com/Qiscus-Integration/skill-feanor/releases) page and open it in the Cowork desktop app.
+Or download `skill-feanor.plugin` from the [Releases](https://github.com/Qiscus-Integration/skill-feanor/releases) page and open it in the Cowork desktop app.
 
 ### 2. Set up the hook in your project repo
 
