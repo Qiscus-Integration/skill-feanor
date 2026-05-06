@@ -39,7 +39,9 @@ if [ -z "$CHANGED" ]; then
   exit 0
 fi
 
-REVIEW=$(FEANOR_MODE=commit claude --print "Run pre-push-review on my staged changes" 2>&1) || true
+REVIEW=$(FEANOR_MODE=commit claude \
+  --add-dir "$HOME/.claude/plugins" \
+  --print "Run pre-push-review on my staged changes" 2>&1) || true
 
 echo "$REVIEW"
 echo ""

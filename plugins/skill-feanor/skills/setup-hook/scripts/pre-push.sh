@@ -42,7 +42,9 @@ if [ -z "$CHANGED" ]; then
 fi
 
 # Run in push mode — reports WARNING and INFO only, never blocks
-REVIEW=$(FEANOR_MODE=push claude --print "Run pre-push-review on my current git changes" 2>&1) || true
+REVIEW=$(FEANOR_MODE=push claude \
+  --add-dir "$HOME/.claude/plugins" \
+  --print "Run pre-push-review on my current git changes" 2>&1) || true
 
 echo "$REVIEW"
 echo ""

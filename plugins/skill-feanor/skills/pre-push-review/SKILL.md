@@ -13,6 +13,29 @@ metadata:
 
 Review frontend code changes and produce a severity-categorized report. This skill operates in two modes depending on which git hook invokes it. Read the mode carefully — it determines which diff to use, which severities to report, and what status line to emit.
 
+## Fail-closed contract
+
+**Reference files are mandatory.** Before applying any rules, read the relevant reference file(s) from `${CLAUDE_PLUGIN_ROOT}/skills/pre-push-review/references/`. If any required reference file cannot be read (sandbox restriction, missing file, permission error, empty content), you MUST NOT improvise rules from your own judgment.
+
+Instead, abort the review and emit:
+
+- In commit mode:
+  ```
+  Cannot load rule reference files. Review aborted to avoid false PASS.
+  Reason: <specific error, e.g. "sandbox blocked read of references/js-ts-rules.md">
+
+  COMMIT_STATUS: BLOCKED
+  ```
+- In push mode:
+  ```
+  Cannot load rule reference files. Review skipped.
+  Reason: <specific error>
+
+  REVIEW_STATUS: PASSED
+  ```
+
+A diff being "trivial" (single comment, whitespace-only, etc.) is NOT grounds to skip rule loading. Rules govern what counts as trivial — JT-B22, for example, classifies certain comment-only diffs as BLOCKING. Never let perceived triviality override the fail-closed contract.
+
 ## Mode detection
 
 The hook script sets the environment variable `FEANOR_MODE` before invoking Claude:
