@@ -48,19 +48,39 @@ One-time setup per repository. Installs the git pre-push hook and optionally cre
 
 ---
 
-## Setup (per repository)
+## Installation
+
+### 1. Install the plugin into Claude Code
+
+Clone this repo and load it into Claude Code using the `--plugin-dir` flag:
+
+```bash
+git clone https://github.com/Qiscus-Integration/skill-feanor.git
+claude --plugin-dir ./skill-feanor
+```
+
+To load it automatically on every session, add it to your Claude Code settings:
+
+```json
+{
+  "pluginDirectories": ["/path/to/skill-feanor"]
+}
+```
+
+Alternatively, download `skill-feanor.plugin` from the [Releases](https://github.com/Qiscus-Integration/skill-feanor/releases) page and open it in the Cowork desktop app.
+
+### 2. Set up the hook in your project repo
 
 **Prerequisites:**
 - [Claude Code CLI](https://claude.ai/download) installed and on your PATH
-- This plugin installed in Claude Code
+- This plugin installed (step 1 above)
 
-**Install the hook:**
-
-Open Claude and ask: *"Set up the frontend pre-push hook in this repo"* from within your project directory. The `setup-hook` skill will guide you through it.
+Open Claude inside your project directory and ask: *"Set up the frontend pre-push hook in this repo"*. The `setup-hook` skill will guide you through it.
 
 Or manually:
 ```bash
-cp /path/to/plugin/skills/setup-hook/scripts/pre-push.sh .git/hooks/pre-push
+# from inside your project repo
+cp /path/to/skill-feanor/skills/setup-hook/scripts/pre-push.sh .git/hooks/pre-push
 chmod +x .git/hooks/pre-push
 ```
 
