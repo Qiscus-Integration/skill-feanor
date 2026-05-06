@@ -1,91 +1,127 @@
 ---
 name: pre-push-review
 description: >
-  Review frontend code changes before a git push. Use when the user says "review my
-  changes before pushing", "run pre-push review", "check my frontend code", or when
-  invoked automatically by the git pre-push hook. Covers HTML, JavaScript, TypeScript,
-  JSX/TSX, Vue single-file components, and HTML ERB templates.
+  Review frontend code changes before a git commit or push. Use when the user says
+  "review my changes before committing", "run pre-commit review", "check my staged changes",
+  "review my changes before pushing", "run pre-push review", or when invoked automatically
+  by the git pre-commit or pre-push hook. Covers HTML, JavaScript, TypeScript, JSX/TSX,
+  Vue single-file components, and HTML ERB templates.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   supported-types: "html, js, ts, jsx, tsx, vue, erb"
 ---
 
-Review all frontend code changes in the current branch that have not yet been pushed. Apply file-type-specific rules, produce a severity-categorized report, and emit a machine-readable status line so the git hook can decide whether to block the push.
+Review frontend code changes and produce a severity-categorized report. This skill operates in two modes depending on which git hook invokes it. Read the mode carefully — it determines which diff to use, which severities to report, and what status line to emit.
 
-## Step 1: Resolve the diff range
+## Mode detection
 
-Run the following to determine what commits are about to be pushed:
+The hook script sets the environment variable `FEANOR_MODE` before invoking Claude:
+
+- `FEANOR_MODE=commit` → **pre-commit mode**: review staged changes, report BLOCKING issues only, block the commit if found.
+- `FEANOR_MODE=push` → **pre-push mode**: review unpushed commits, report WARNING and INFO only (BLOCKING already caught at commit time), never block.
+
+If `FEANOR_MODE` is not set, default to `push` mode.
+
+---
+
+## pre-commit mode (`FEANOR_MODE=commit`)
+
+### Step 1: Get staged changes
+
+```bash
+git diff --cached -- '*.html' '*.js' '*.mjs' '*.cjs' '*.ts' '*.tsx' '*.jsx' '*.vue' '*.erb'
+git diff --cached --name-only -- '*.html' '*.js' '*.mjs' '*.cjs' '*.ts' '*.tsx' '*.jsx' '*.vue' '*.erb'
+```
+
+If no frontend files are staged, output:
+```
+No frontend files staged. Skipping review.
+
+COMMIT_STATUS: PASSED
+```
+Then stop.
+
+### Step 2: Apply BLOCKING rules only
+
+Apply only rules marked **BLOCKING** from the corresponding reference files. Skip WARNING and INFO entirely — they are deferred to the pre-push review.
+
+- HTML → `references/html-rules.md` (BLOCKING only)
+- JS / TS → `references/js-ts-rules.md` (BLOCKING only)
+- JSX / TSX → `references/js-ts-rules.md` + `references/jsx-rules.md` (BLOCKING only)
+- Vue → `references/js-ts-rules.md` + `references/vue-rules.md` (BLOCKING only)
+- ERB → `references/erb-rules.md` (BLOCKING only)
+
+Apply project-specific BLOCKING rules from `.pr-review-context.md` if present.
+
+**CRITICAL: Severity must always come from the reference file, never from your own judgment.** Every rule in the reference files has an explicit severity heading (`## BLOCKING`, `## WARNING`, `## INFO`). If a rule is listed under `## BLOCKING`, it is BLOCKING — regardless of how minor it may seem (e.g., a missing space, a quote style violation). Do not reclassify rules based on intuition.
+
+### Step 3: Output
+
+```
+╔══════════════════════════════════════════╗
+║     Frontend Pre-Commit Review Report    ║
+╚══════════════════════════════════════════╝
+
+  Files staged  : <N>
+  File types    : <list of types found>
+
+── BLOCKING ISSUES (<N>) ──────────────────────────────────────
+❌  <path/to/file.ext>:<line>
+    <Clear description of the issue and why it matters>
+    → Fix: <Specific, actionable remediation>
+
+── SUMMARY ────────────────────────────────────────────────────
+<1-2 sentence summary. If zero issues, say so clearly.>
+
+COMMIT_STATUS: BLOCKED
+```
+
+Status line rules:
+- Print `COMMIT_STATUS: BLOCKED` if there is at least one BLOCKING issue.
+- Print `COMMIT_STATUS: PASSED` if there are none.
+- If a section has zero items, omit the section header entirely.
+- The status line must be the very last line of output with no trailing whitespace or blank lines.
+
+---
+
+## pre-push mode (`FEANOR_MODE=push`)
+
+### Step 1: Get unpushed commits
 
 ```bash
 git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
 ```
 
-If an upstream branch exists, use `@{u}..HEAD` as the diff range. If it does not (new branch, no tracking), fall back to `HEAD~1..HEAD`. If HEAD is the first commit ever, use `--root`.
-
-Get the filtered diff (frontend files only):
+If upstream exists, use `@{u}..HEAD`. If not (new branch), fall back to `HEAD~1..HEAD`.
 
 ```bash
 git diff <range> -- '*.html' '*.js' '*.mjs' '*.cjs' '*.ts' '*.tsx' '*.jsx' '*.vue' '*.erb'
-```
-
-Also get the file list for quick reference:
-
-```bash
 git diff <range> --name-only -- '*.html' '*.js' '*.mjs' '*.cjs' '*.ts' '*.tsx' '*.jsx' '*.vue' '*.erb'
 ```
 
 If no frontend files changed, output:
-
 ```
 No frontend files changed. Skipping review.
 
 REVIEW_STATUS: PASSED
 ```
-
 Then stop.
 
-## Step 2: Group changed files by type
+### Step 2: Apply WARNING and INFO rules only
 
-Bucket each changed file into one of these categories for rule application:
+Apply only rules marked **WARNING** or **INFO** from the corresponding reference files. Skip BLOCKING entirely — those were already enforced at commit time.
 
-| Type | Extensions |
-|------|-----------|
-| HTML | `.html` (non-ERB) |
-| JavaScript | `.js`, `.mjs`, `.cjs` |
-| TypeScript | `.ts` (non-JSX) |
-| JSX / React | `.jsx`, `.tsx` |
-| Vue SFC | `.vue` |
-| ERB Template | `.html.erb`, `.erb` |
+- HTML → `references/html-rules.md` (WARNING + INFO only)
+- JS / TS → `references/js-ts-rules.md` (WARNING + INFO only)
+- JSX / TSX → `references/js-ts-rules.md` + `references/jsx-rules.md` (WARNING + INFO only)
+- Vue → `references/js-ts-rules.md` + `references/vue-rules.md` (WARNING + INFO only)
+- ERB → `references/erb-rules.md` (WARNING + INFO only)
 
-**Skip entirely:** `*.min.js`, `dist/`, `build/`, `node_modules/`, `*.lock`, `*.snap`, auto-generated files (look for `// @generated` or `// This file is auto-generated` headers).
+Apply project-specific WARNING/INFO rules from `.pr-review-context.md` if present.
 
-**Treat with lighter scrutiny** (apply only BLOCKING rules): test files (`*.spec.*`, `*.test.*`, `__tests__/`, `spec/`).
+**CRITICAL: Severity must always come from the reference file, never from your own judgment.** Every rule has an explicit severity heading (`## BLOCKING`, `## WARNING`, `## INFO`). A rule listed under `## WARNING` is WARNING — do not upgrade it to BLOCKING or downgrade it to INFO based on intuition. Report it exactly as classified in the reference file.
 
-## Step 3: Apply rules per file type
-
-For each changed file, load and apply the rules from the corresponding reference file:
-
-- HTML → `references/html-rules.md`
-- JS / TS → `references/js-ts-rules.md`
-- JSX / TSX → `references/js-ts-rules.md` + `references/jsx-rules.md`
-- Vue → `references/js-ts-rules.md` + `references/vue-rules.md`
-- ERB → `references/erb-rules.md`
-
-Read the full file content (not just the diff) when context beyond the changed lines is needed to evaluate a rule correctly. Prefer precision — only flag issues that are clearly present.
-
-Severity definitions:
-
-- **BLOCKING** — Must be resolved before this push. Bugs, security vulnerabilities, breaking patterns, or runtime errors.
-- **WARNING** — Should be resolved soon. Code quality, conventions, maintainability problems.
-- **INFO** — Optional improvement. Minor style notes, suggestions, good-to-knows.
-
-## Step 4: Incorporate project context
-
-If a `.pr-review-context.md` file was loaded via the SessionStart hook (it appears in your context as "## Project-Specific Review Context"), apply any additional rules or special patterns it defines. Project rules take precedence over the generic reference rules when they conflict.
-
-## Step 5: Output the review report
-
-Use this exact format:
+### Step 3: Output
 
 ```
 ╔══════════════════════════════════════════╗
@@ -95,11 +131,6 @@ Use this exact format:
   Files reviewed : <N>
   Commits        : <N> (<short commit range>)
   File types     : <list of types found>
-
-── BLOCKING ISSUES (<N>) ──────────────────────────────────────
-❌  <path/to/file.ext>:<line>
-    <Clear description of the issue and why it matters>
-    → Fix: <Specific, actionable remediation>
 
 ── WARNINGS (<N>) ─────────────────────────────────────────────
 ⚠️   <path/to/file.ext>:<line>
@@ -111,15 +142,32 @@ Use this exact format:
     <Description>
 
 ── SUMMARY ────────────────────────────────────────────────────
-<1-3 sentence plain-English summary. Mention the most important
-finding. Note if zero issues were found.>
+<1-3 sentence summary. Note if zero issues found. Remind the
+developer these are non-blocking suggestions.>
 
-REVIEW_STATUS: BLOCKED
+REVIEW_STATUS: PASSED
 ```
 
-Rules for the status line:
-- Print `REVIEW_STATUS: BLOCKED` if there is **at least one BLOCKING issue**.
-- Print `REVIEW_STATUS: PASSED` if there are zero BLOCKING issues (warnings and info are fine).
-- The status line **must always be the very last line** of output with no trailing whitespace or blank lines after it, so the hook script can reliably grep for it.
+Status line rules:
+- Always print `REVIEW_STATUS: PASSED` — the pre-push report never blocks.
+- If a section has zero items, omit the section header entirely.
+- The status line must be the very last line of output with no trailing whitespace or blank lines.
 
-If a section has zero items, omit the section header entirely (do not print "── BLOCKING ISSUES (0) ──").
+---
+
+## Shared rules
+
+**Skip entirely (both modes):** `*.min.js`, `dist/`, `build/`, `node_modules/`, `*.lock`, `*.snap`, auto-generated files (`// @generated` or `// This file is auto-generated` headers).
+
+**Test files** (`*.spec.*`, `*.test.*`, `__tests__/`, `spec/`): apply BLOCKING rules in commit mode, skip entirely in push mode.
+
+**File type mapping:**
+
+| Type | Extensions |
+|------|-----------|
+| HTML | `.html` (non-ERB) |
+| JavaScript | `.js`, `.mjs`, `.cjs` |
+| TypeScript | `.ts` (non-JSX) |
+| JSX / React | `.jsx`, `.tsx` |
+| Vue SFC | `.vue` |
+| ERB Template | `.html.erb`, `.erb` |
