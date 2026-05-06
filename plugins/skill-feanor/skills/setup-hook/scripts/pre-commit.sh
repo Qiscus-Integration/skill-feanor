@@ -44,7 +44,7 @@ REVIEW=$(FEANOR_MODE=commit claude --print "Run pre-push-review on my staged cha
 echo "$REVIEW"
 echo ""
 
-if echo "$REVIEW" | grep -q "COMMIT_STATUS: BLOCKED"; then
+if echo "$REVIEW" | grep -qE "(COMMIT|REVIEW)_STATUS: BLOCKED"; then
   echo "${RED}${BOLD}❌  Blocking issues found. Commit aborted.${RESET}"
   echo "    Fix the issues above, then try committing again."
   echo "    To skip the review:  ${BOLD}git commit --no-verify${RESET}"
