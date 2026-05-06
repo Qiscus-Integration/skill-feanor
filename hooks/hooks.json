@@ -1,0 +1,14 @@
+{
+  "SessionStart": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "if [ -f \"./.pr-review-context.md\" ]; then echo '## Project-Specific Review Context'; echo ''; cat \"./.pr-review-context.md\"; echo ''; fi",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
+}
