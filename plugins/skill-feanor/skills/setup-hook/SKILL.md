@@ -1,14 +1,17 @@
 ---
 name: setup-hook
 description: >
-  Install the frontend pre-push git hook in the current repository. Use when the user says
-  "set up the hook", "install the pre-push hook", "configure this plugin for my repo",
-  "add the git hook", or "how do I activate this in my project". Run once per repo.
+  Install the frontend git hooks in the current repository. Use when the user says
+  "set up the hook", "install the hooks", "configure this plugin for my repo",
+  "add the git hooks", or "how do I activate this in my project". Run once per repo.
+  Installs both a pre-commit hook (BLOCKING issues) and a pre-push hook (WARNING + INFO).
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
-Install the git pre-push hook for the current repository so that `pre-push-review` runs automatically before every `git push`.
+Install two git hooks for the current repository:
+- **pre-commit** — checks staged changes for BLOCKING issues. Blocks the commit if found.
+- **pre-push** — reviews unpushed commits for WARNING and INFO issues. Never blocks.
 
 ## Step 1: Verify prerequisites
 
@@ -28,27 +31,29 @@ which claude 2>/dev/null || command -v claude 2>/dev/null
 
 If `claude` is not found, stop and instruct the user to install Claude Code first. Point them to https://claude.ai/download.
 
-## Step 2: Check for an existing pre-push hook
+## Step 2: Check for existing hooks
 
 ```bash
+ls -la .git/hooks/pre-commit 2>/dev/null
 ls -la .git/hooks/pre-push 2>/dev/null
 ```
 
-If a file already exists at `.git/hooks/pre-push`, show the user its current contents and ask whether to overwrite it. Do not overwrite without confirmation.
+If either file already exists, show the user its current contents and ask whether to overwrite it. Do not overwrite without confirmation.
 
-## Step 3: Install the hook script
-
-Copy the hook script from the plugin:
+## Step 3: Install both hook scripts
 
 ```bash
+cp "${CLAUDE_PLUGIN_ROOT}/skills/setup-hook/scripts/pre-commit.sh" .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+
 cp "${CLAUDE_PLUGIN_ROOT}/skills/setup-hook/scripts/pre-push.sh" .git/hooks/pre-push
 chmod +x .git/hooks/pre-push
 ```
 
-Confirm the file is executable:
+Confirm both files are executable:
 
 ```bash
-ls -la .git/hooks/pre-push
+ls -la .git/hooks/pre-commit .git/hooks/pre-push
 ```
 
 ## Step 4: Offer to create a project context file
@@ -60,7 +65,7 @@ If yes, create `.pr-review-context.md` in the current directory with this templa
 ```markdown
 # PR Review Context
 
-This file is automatically loaded by the `frontend-push-review` plugin.
+This file is automatically loaded by the skill-feanor plugin.
 Add project-specific rules, patterns, and context that the reviewer should know.
 
 ## Project Overview
@@ -101,15 +106,22 @@ Add project-specific rules, patterns, and context that the reviewer should know.
 Print a clear confirmation:
 
 ```
-✅ Pre-push hook installed at .git/hooks/pre-push
+✅ Hooks installed:
+   .git/hooks/pre-commit  — BLOCKING issues only, blocks commit if found
+   .git/hooks/pre-push    — WARNING + INFO, never blocks
 
 How it works:
-  - Runs automatically on every `git push`
-  - Reviews all changed HTML, JS, TS, JSX, Vue, and ERB files
-  - Prints a report and blocks the push if BLOCKING issues are found
-  - To bypass (e.g., WIP push): git push --no-verify
+  git commit
+    → Feanor checks staged files for blocking issues
+    → If found: commit is aborted, fix and retry
+    → To bypass: git commit --no-verify
+
+  git push
+    → Feanor reviews all unpushed commits for warnings and suggestions
+    → Never blocks — informational only
+    → To bypass: git push --no-verify
 
 Optional project context:
   - Edit .pr-review-context.md to add project-specific rules
-  - The reviewer loads it automatically — no configuration needed
+  - Loaded automatically on every review — no configuration needed
 ```
