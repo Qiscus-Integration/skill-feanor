@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "skill-feanor",
-      "source": ".",
+      "source": "./plugins/skill-feanor",
       "description": "Frontend-focused pre-push code review for HTML, JS, TS, JSX, Vue, and ERB"
     }
   ]
