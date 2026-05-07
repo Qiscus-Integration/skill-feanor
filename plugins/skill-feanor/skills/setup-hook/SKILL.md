@@ -6,7 +6,7 @@ description: >
   "add the git hooks", or "how do I activate this in my project". Run once per repo.
   Installs both a pre-commit hook (BLOCKING issues) and a pre-push hook (WARNING + INFO).
 metadata:
-  version: "0.2.0"
+  version: "0.2.3"
 ---
 
 Install two git hooks for the current repository:

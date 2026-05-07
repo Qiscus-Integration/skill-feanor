@@ -1,6 +1,6 @@
 {
   "name": "skill-feanor",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Frontend-focused pre-push code review. Catches common issues in HTML, JS, TS, JSX, Vue, and ERB before a PR is created — so manual reviewers only handle complex changes.",
   "author": {
     "name": "Qiscus"

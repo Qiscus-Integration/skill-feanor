@@ -7,7 +7,7 @@ description: >
   by the git pre-commit or pre-push hook. Covers HTML, JavaScript, TypeScript, JSX/TSX,
   Vue single-file components, and HTML ERB templates.
 metadata:
-  version: "0.2.0"
+  version: "0.2.3"
   supported-types: "html, js, ts, jsx, tsx, vue, erb"
 ---
 
