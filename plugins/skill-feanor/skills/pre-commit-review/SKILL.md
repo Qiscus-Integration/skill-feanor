@@ -6,7 +6,7 @@ description: >
   "run feanor review", or when invoked automatically by the git pre-commit hook. Covers
   HTML, JavaScript, TypeScript, JSX/TSX, Vue single-file components, and HTML ERB templates.
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   supported-types: "html, js, ts, jsx, tsx, vue, erb"
 ---
 

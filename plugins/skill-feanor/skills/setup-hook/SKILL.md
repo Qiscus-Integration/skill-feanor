@@ -5,7 +5,7 @@ description: >
   "set up the hook", "install the hook", "configure this plugin for my repo",
   "add the git hook", or "how do I activate this in my project". Run once per repo.
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
 ---
 
 Install a git pre-commit hook that reviews staged frontend changes. BLOCKING issues abort the commit; WARNING and INFO are reported but do not block.

@@ -42,13 +42,26 @@ save(); // Promise returned and discarded
 These rules enforce the organization's coding conventions. Flag violations in newly added lines (diff `+` lines) only — do not flag pre-existing code that wasn't touched in this diff.
 
 ### JT-B6: Single quotes used for strings
-Use double quotes for all string literals. Single quotes are only acceptable for strings that contain apostrophes (e.g., `"can't"`, `"don't"`). Template literals (backticks) are allowed only when string interpolation is needed.
+Use double quotes for all string literals. Single quotes are only acceptable in these cases:
+1. The string contains apostrophes (e.g., `"can't"`, `"don't"`).
+2. The string is **nested inside a template-literal interpolation** (`${...}`) where the outer template uses backticks. Switching to double quotes here would clash with surrounding attribute or string delimiters.
+3. The string is **nested inside a double-quoted attribute or string** where doubling up would require escaping (e.g., HTML/JSX/Vue attributes, JSON-in-string).
+
+Template literals (backticks) are allowed only when string interpolation is needed.
 ```js
-console.log("hello there");          // ✓ ok
-console.log(`hello ${name}`);        // ✓ ok — interpolation
-console.log('hello there');          // ✗ flag
-console.log(`hello there`);          // ✗ flag — no interpolation needed
+console.log("hello there");                                   // ✓ ok
+console.log(`hello ${name}`);                                 // ✓ ok — interpolation
+console.log('hello there');                                   // ✗ flag
+console.log(`hello there`);                                   // ✗ flag — no interpolation needed
+
+// ✓ ok — single quotes inside ${...} of a template literal
+:class="`flex items-center gap-2 h-7 ${disabled ? '' : 'bg-gray-shade'}`"
+
+// ✓ ok — single quotes inside a double-quoted attribute
+<div title="it's fine"></div>
 ```
+- Do not flag: single-quoted strings appearing inside `${...}` of a template literal.
+- Do not flag: single-quoted strings nested inside a double-quoted attribute value or string where escaping would otherwise be required.
 
 ### JT-B7: Missing semicolons at end of statements
 All statements must end with a semicolon. Relying on ASI (Automatic Semicolon Insertion) can cause subtle bugs, especially when a line starts with `[`, `(`, or a template literal.
