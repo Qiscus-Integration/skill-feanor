@@ -7,7 +7,7 @@
     {
       "name": "skill-feanor",
       "source": "./plugins/skill-feanor",
-      "description": "Frontend-focused pre-push code review for HTML, JS, TS, JSX, Vue, and ERB"
+      "description": "Frontend-focused pre-commit code review for HTML, JS, TS, JSX, Vue, and ERB"
     }
   ]
 }

@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================================
 #  Frontend Pre-Commit Review Hook (skill-feanor)
-#  Checks staged changes for BLOCKING issues only.
+#  Reviews staged changes for BLOCKING, WARNING, and INFO issues.
+#  BLOCKING aborts the commit; WARNING + INFO are reported only.
 #
-#  To bypass:  git commit --no-verify
 #  To uninstall: rm .git/hooks/pre-commit
 # ============================================================
 
@@ -64,17 +64,16 @@ if [ -z "$CHANGED" ]; then
   exit 0
 fi
 
-REVIEW=$(FEANOR_MODE=commit claude \
+REVIEW=$(claude \
   --add-dir "$HOME/.claude/plugins" \
   --print "Run feanor review on my staged changes" 2>&1) || true
 
 echo "$REVIEW"
 echo ""
 
-if echo "$REVIEW" | grep -qE "(COMMIT|REVIEW)_STATUS: BLOCKED"; then
+if echo "$REVIEW" | grep -qE "COMMIT_STATUS: BLOCKED"; then
   echo "${RED}${BOLD}❌  Blocking issues found. Commit aborted.${RESET}"
   echo "    Fix the issues above, then try committing again."
-  echo "    To skip the review:  ${BOLD}git commit --no-verify${RESET}"
   echo ""
   exit 1
 fi

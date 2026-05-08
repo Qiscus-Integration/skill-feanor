@@ -1,6 +1,6 @@
 # skill-feanor
 
-A Claude plugin that reviews frontend code changes automatically before every `git push`. Catches common bugs, security issues, and convention violations in HTML, JavaScript, TypeScript, JSX/TSX, Vue SFCs, and HTML ERB — so your manual PR reviewers can focus on the complex stuff.
+A Claude plugin that reviews frontend code changes automatically before every `git commit`. Catches common bugs, security issues, and convention violations in HTML, JavaScript, TypeScript, JSX/TSX, Vue SFCs, and HTML ERB — so your manual PR reviewers can focus on the complex stuff.
 
 ---
 
@@ -9,27 +9,28 @@ A Claude plugin that reviews frontend code changes automatically before every `g
 ```
 dev edits code
        ↓
-git push
+git commit
        ↓
-pre-push hook fires
+pre-commit hook fires
        ↓
-Claude reviews changed frontend files
+Claude reviews staged frontend files
        ↓
-  ┌────────────────────────────────┐
-  │ BLOCKING issues found?         │
-  │  Yes → push aborted, fix first │
-  │  No  → push proceeds           │
-  └────────────────────────────────┘
+  ┌─────────────────────────────────────────┐
+  │ BLOCKING issues found?                  │
+  │  Yes → commit aborted, fix first        │
+  │  No  → commit proceeds                  │
+  │       (WARNING + INFO printed anyway)   │
+  └─────────────────────────────────────────┘
        ↓
-PR created → manual review focused on complex changes only
+git push → PR review focused on complex changes only
 ```
 
 ---
 
 ## Skills
 
-### `pre-push-review`
-The core review skill. Triggered automatically by the git hook, or manually by asking Claude to "review my changes before pushing".
+### `pre-commit-review`
+The core review skill. Triggered automatically by the pre-commit hook, or manually by asking Claude to "review my staged changes".
 
 Covers:
 - **HTML** — accessibility (alt, labels, roles), semantic structure, inline styles, heading hierarchy
@@ -38,13 +39,13 @@ Covers:
 - **Vue SFCs** — `v-for` without `:key`, `v-html`, prop mutation, `$parent` access, props without types
 - **HTML ERB** — `raw()` / `.html_safe` XSS, unescaped JS interpolation, N+1 query patterns, hardcoded routes, logic in views
 
-Issues are reported in three severities:
-- **BLOCKING** — push is aborted until fixed
-- **WARNING** — reported but push proceeds
+Issues are reported in three severities, all surfaced at commit time:
+- **BLOCKING** — commit is aborted until fixed
+- **WARNING** — reported but commit proceeds
 - **INFO** — minor suggestions
 
 ### `setup-hook`
-One-time setup per repository. Installs the git pre-push hook and optionally creates a `.pr-review-context.md` file for project-specific rules.
+One-time setup per repository. Installs the git pre-commit hook and optionally creates a `.pr-review-context.md` file for project-specific rules.
 
 ---
 
@@ -66,32 +67,24 @@ Once the marketplace is added, install the plugin:
 
 That's it — no cloning required. Claude Code fetches it directly from GitHub.
 
-**Alternative (manual install):**
-```bash
-git clone https://github.com/Qiscus-Integration/skill-feanor.git
-claude --plugin-dir ./skill-feanor
-```
-
-Or download `skill-feanor.plugin` from the [Releases](https://github.com/Qiscus-Integration/skill-feanor/releases) page and open it in the Cowork desktop app.
-
 ### 2. Set up the hook in your project repo
 
 **Prerequisites:**
 - [Claude Code CLI](https://claude.ai/download) installed and on your PATH
 - This plugin installed (step 1 above)
 
-Open Claude inside your project directory and ask: *"Set up the frontend pre-push hook in this repo"*. The `setup-hook` skill will guide you through it.
+Open Claude inside your project directory and ask: *"Set up the frontend pre-commit hook in this repo"*. The `setup-hook` skill will guide you through it.
 
 Or manually:
 ```bash
 # from inside your project repo
-cp /path/to/skill-feanor/skills/setup-hook/scripts/pre-push.sh .git/hooks/pre-push
-chmod +x .git/hooks/pre-push
+cp ~/.claude/plugins/cache/qiscus-plugins/skill-feanor/skills/setup-hook/scripts/pre-commit.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
 ```
 
 **Verify:**
 ```bash
-cat .git/hooks/pre-push   # should show the hook script
+cat .git/hooks/pre-commit   # should show the hook script
 ```
 
 ---
@@ -126,7 +119,7 @@ The `setup-hook` skill creates a filled template for you.
 ## Uninstalling from a repo
 
 ```bash
-rm .git/hooks/pre-push
+rm .git/hooks/pre-commit
 ```
 
 The plugin itself remains installed in Claude Code and can be re-added to any repo at any time.
@@ -135,17 +128,17 @@ The plugin itself remains installed in Claude Code and can be re-added to any re
 
 ## Updating the rules
 
-Rules live in plain markdown files inside `skills/pre-push-review/references/`. To update a rule, edit the relevant file and rebuild the `.plugin` artifact.
+Rules live in plain markdown files inside `plugins/skill-feanor/skills/pre-commit-review/references/`. To update a rule, edit the relevant file and rebuild the `.plugin` artifact.
 
 **Where each file type's rules live:**
 
 | File | Rules for |
 |------|-----------|
-| `skills/pre-push-review/references/html-rules.md` | HTML |
-| `skills/pre-push-review/references/js-ts-rules.md` | JS, TS, JSX, TSX, Vue (script block) |
-| `skills/pre-push-review/references/jsx-rules.md` | JSX / React specific |
-| `skills/pre-push-review/references/vue-rules.md` | Vue SFC specific |
-| `skills/pre-push-review/references/erb-rules.md` | HTML ERB |
+| `plugins/skill-feanor/skills/pre-commit-review/references/html-rules.md` | HTML |
+| `plugins/skill-feanor/skills/pre-commit-review/references/js-ts-rules.md` | JS, TS, JSX, TSX, Vue (script block) |
+| `plugins/skill-feanor/skills/pre-commit-review/references/jsx-rules.md` | JSX / React specific |
+| `plugins/skill-feanor/skills/pre-commit-review/references/vue-rules.md` | Vue SFC specific |
+| `plugins/skill-feanor/skills/pre-commit-review/references/erb-rules.md` | HTML ERB |
 
 **Contribution workflow:**
 
@@ -154,12 +147,12 @@ Rules live in plain markdown files inside `skills/pre-push-review/references/`. 
 3. Open a PR — rules are plain markdown, easy to review
 4. Once merged, rebuild the `.plugin` and commit it:
    ```bash
-   ./build.sh
+   ./plugins/skill-feanor/build.sh
    ```
 5. Teammates reinstall the updated `.plugin` file
 
 **Rebuilding manually** (if you don't want to use `build.sh`):
 ```bash
-cd skill-feanor
-zip -r ../skill-feanor.plugin . -x "*.DS_Store"
+cd plugins/skill-feanor
+zip -r ../../skill-feanor.plugin . -x "*.DS_Store"
 ```
