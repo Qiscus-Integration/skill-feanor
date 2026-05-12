@@ -9,6 +9,16 @@
 
 set -euo pipefail
 
+# ── Skip gate ───────────────────────────────────────────────────────────────
+# Skip only this hook (other pre-commit hooks still run) by setting:
+#   SKILL_FEANOR_SKIP=1 git commit -m "..."
+# Use git's --no-verify to skip every hook in the file instead.
+if [ "${SKILL_FEANOR_SKIP:-0}" = "1" ]; then
+  echo "skill-feanor: skipped via SKILL_FEANOR_SKIP=1"
+  exit 0
+fi
+# ────────────────────────────────────────────────────────────────────────────
+
 # ── Resolve claude binary ────────────────────────────────────────────────────
 # Git hooks don't source .bashrc/.zshrc, so NVM-managed binaries may not be
 # on PATH. Try common locations before giving up.

@@ -6,7 +6,7 @@ description: >
   "add the git hook", or "how do I activate this in my project". Run once per repo.
   Idempotent — re-running only refreshes the managed block.
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 Install a git pre-commit hook that reviews staged frontend changes. BLOCKING issues abort the commit; WARNING and INFO are reported but do not block.
@@ -146,6 +146,38 @@ Optional project context:
   - Edit .pr-review-context.md to add project-specific rules
   - Loaded automatically on every review — no configuration needed
 ```
+
+## Skipping the review
+
+Skip feanor while still letting other pre-commit hooks (lint, lefthook, husky
+tasks) run. `git commit --no-verify` is the global escape hatch — it skips
+every hook in the file, which is usually not what you want.
+
+**Per-tool skip — environment variable:**
+
+```bash
+SKILL_FEANOR_SKIP=1 git commit -m "wip: experimental"
+```
+
+Why no commit-message marker? Tested git's actual hook order: pre-commit fires
+*before* git writes the new commit message to `.git/COMMIT_EDITMSG`. The file
+on disk holds the *previous* commit's message at the time pre-commit runs, so
+any "[skip feanor]" marker in the current message is unreadable from inside the
+hook. This is a hard git design constraint, not something we can work around.
+
+**GUI clients (VS Code / GitKraken / JetBrains):**
+
+The commit button has no per-click env-var injection. Workarounds:
+
+- *Workspace toggle.* Add to `.vscode/settings.json` when you need to skip:
+  ```json
+  { "git.env": { "SKILL_FEANOR_SKIP": "1" } }
+  ```
+  Affects all git operations VS Code runs in that workspace until you remove it.
+- *Terminal commit.* Stage in the GUI, then commit from a terminal with the env
+  var set.
+- *`--no-verify`.* Use the GUI's "commit (no verify)" action when you need to
+  bypass every hook.
 
 ## Uninstall
 

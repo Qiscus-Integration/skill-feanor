@@ -45,7 +45,7 @@ Issues are reported in three severities, all surfaced at commit time:
 - **INFO** — minor suggestions
 
 ### `setup-hook`
-One-time setup per repository. Installs the git pre-commit hook and optionally creates a `.pr-review-context.md` file for project-specific rules.
+One-time setup per repository. Installs the git pre-commit hook as a *managed block* between BEGIN/END markers so it coexists with other tooling (husky, lefthook, custom hooks). Re-running the skill is idempotent — it refreshes only the managed block. Also offers to create a `.pr-review-context.md` for project-specific rules.
 
 ---
 
@@ -78,13 +78,21 @@ Open Claude inside your project directory and ask: *"Set up the frontend pre-com
 Or manually:
 ```bash
 # from inside your project repo
-cp ~/.claude/plugins/cache/qiscus-plugins/skill-feanor/skills/setup-hook/scripts/pre-commit.sh .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
+bash ~/.claude/plugins/cache/qiscus-plugins/skill-feanor/skills/setup-hook/scripts/install.sh
 ```
+
+The installer detects the current state and acts accordingly:
+
+| Existing hook state | Installer behavior |
+|--|--|
+| No file | Creates `.git/hooks/pre-commit` with shebang + managed block |
+| Markers present | Replaces only the block between markers |
+| Other hook code, no markers | Appends the managed block (other content preserved) |
+| Legacy pre-0.4.0 install (no markers, feanor-only file) | Prompts before overwriting; writes a `.legacy.<ts>.bak` backup. Pass `--yes` to skip the prompt. |
 
 **Verify:**
 ```bash
-cat .git/hooks/pre-commit   # should show the hook script
+grep -F "skill-feanor:pre-commit BEGIN" .git/hooks/pre-commit
 ```
 
 ---
@@ -116,11 +124,35 @@ The `setup-hook` skill creates a filled template for you.
 
 ---
 
+## Skipping a single commit
+
+`git commit --no-verify` skips **every** pre-commit hook in the file, not just feanor's block. To skip only the feanor review while letting other pre-commit tooling run, set the env var:
+
+```bash
+SKILL_FEANOR_SKIP=1 git commit -m "wip: experimental"
+```
+
+GUI clients (VS Code Source Control, GitKraken, JetBrains) have no per-click env-var injection. Workarounds:
+
+- Add `"git.env": { "SKILL_FEANOR_SKIP": "1" }` to `.vscode/settings.json` temporarily.
+- Commit from a terminal with the env var set.
+- Use the GUI's "commit (no verify)" action when bypassing every hook is fine.
+
+The commit-message marker approach (e.g. `[skip feanor]`) is not supported — git fires pre-commit *before* writing the new message to `.git/COMMIT_EDITMSG`, so the hook can't read it. This is a git design constraint, not a missing feature.
+
+---
+
 ## Uninstalling from a repo
 
 ```bash
-rm .git/hooks/pre-commit
+bash ~/.claude/plugins/cache/qiscus-plugins/skill-feanor/skills/setup-hook/scripts/uninstall.sh
 ```
+
+Behavior:
+- Strips only the managed block between BEGIN/END markers.
+- Deletes `.git/hooks/pre-commit` entirely if no other content remained.
+- Other hook code (husky, lefthook, custom scripts) is preserved.
+- Legacy pre-0.4.0 install: prompts before deletion, writes a `.legacy.<ts>.bak` backup. Pass `--yes` to skip the prompt.
 
 The plugin itself remains installed in Claude Code and can be re-added to any repo at any time.
 
