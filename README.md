@@ -188,3 +188,17 @@ Rules live in plain markdown files inside `plugins/skill-feanor/skills/pre-commi
 cd plugins/skill-feanor
 zip -r ../../skill-feanor.plugin . -x "*.DS_Store"
 ```
+
+---
+
+## Roadmap to v1.0.0
+
+The plugin is on the `0.x` track — the public surface (marker strings, env var name, CLI flags, severity buckets, rule IDs) may still change. Items targeted before cutting `1.0.0`:
+
+- **Decide fail-mode when `claude` is unavailable.** Today the hook prints a warning and lets the commit through (fail-open). For production use this is a silent bypass. Need an explicit, documented contract — fail-closed by default, or fail-open with a louder signal.
+- **Timeout around the `claude` call.** Network hiccups or slow reviews can hang the commit indefinitely. Wrap the invocation with `timeout` and define behavior on timeout.
+- **Exit-code-based gating.** The hook currently greps stdout for `COMMIT_STATUS: BLOCKED`. Fragile against any change to the review skill's output format. Replace with a defined exit-code contract on the review side.
+- **`CHANGELOG.md`.** Per-version entries so consumers know what shipped.
+- **Automated tests.** Today install/uninstall/skip behavior is verified by hand. Needs a small bash test suite (or `bats`) covering: fresh install, marker replace, legacy migration, env var skip, worktrees, custom `core.hooksPath`.
+- **Burn-in.** 0.5.0 / 0.6.0 in real repos for several weeks before promising stability with `1.0.0`.
+- **Git tag.** Cut `v1.0.0` only after the items above land.
