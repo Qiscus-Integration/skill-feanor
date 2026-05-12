@@ -4,11 +4,22 @@ description: >
   Install the frontend git pre-commit hook in the current repository. Use when the user says
   "set up the hook", "install the hook", "configure this plugin for my repo",
   "add the git hook", or "how do I activate this in my project". Run once per repo.
+  Idempotent — re-running only refreshes the managed block.
 metadata:
-  version: "0.3.1"
+  version: "0.4.0"
 ---
 
 Install a git pre-commit hook that reviews staged frontend changes. BLOCKING issues abort the commit; WARNING and INFO are reported but do not block.
+
+The hook content is wrapped between marker lines:
+
+```
+# >>> skill-feanor:pre-commit BEGIN - managed block, do not edit
+...
+# <<< skill-feanor:pre-commit END
+```
+
+Re-running install replaces only that block. Other hook code (husky, lefthook, custom checks) is preserved. Uninstall strips only the block.
 
 ## Step 1: Verify prerequisites
 
@@ -28,25 +39,44 @@ which claude 2>/dev/null || command -v claude 2>/dev/null
 
 If `claude` is not found, stop and instruct the user to install Claude Code first. Point them to https://claude.ai/download.
 
-## Step 2: Check for existing hook
+## Step 2: Inspect existing hook (informational)
 
 ```bash
-ls -la .git/hooks/pre-commit 2>/dev/null
+HOOKS_DIR="$(git rev-parse --git-path hooks)"
+ls -la "$HOOKS_DIR/pre-commit" 2>/dev/null || echo "no existing pre-commit hook"
 ```
 
-If the file already exists, show the user its current contents and ask whether to overwrite it. Do not overwrite without confirmation.
-
-## Step 3: Install the hook script
+If the file exists, check whether it already contains a managed skill-feanor block:
 
 ```bash
-cp "${CLAUDE_PLUGIN_ROOT}/skills/setup-hook/scripts/pre-commit.sh" .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
+grep -F "skill-feanor:pre-commit BEGIN" "$HOOKS_DIR/pre-commit" 2>/dev/null \
+  && echo "managed block present — install will refresh it" \
+  || echo "no managed block — install will append one to the existing hook"
 ```
 
-Confirm the file is executable:
+No confirmation is needed for either case; the installer never touches code outside the markers. Only ask the user before proceeding if the existing hook looks unusual (binary, very large, suspicious content).
+
+## Step 3: Run the installer
 
 ```bash
-ls -la .git/hooks/pre-commit
+bash "${CLAUDE_PLUGIN_ROOT}/skills/setup-hook/scripts/install.sh"
+```
+
+Behavior:
+
+- No hook file → creates one with `#!/bin/bash` + managed block.
+- Hook exists, markers present → replaces only the block between markers.
+- Hook exists, no markers, but legacy signature detected (`Frontend Pre-Commit Review Hook (skill-feanor)`) → asks for `y/N` confirmation before overwriting the entire file, saves a `.legacy.<timestamp>.bak` next to the hook, then writes the marker-wrapped version.
+- Hook exists, no markers, no legacy signature → appends the managed block after existing content (user's other hook code preserved).
+
+Pass `--yes` to skip the legacy-migration prompt (e.g., when running non-interactively). If a legacy hook is found, no TTY is attached, and `--yes` is not passed, the installer aborts with a clear message.
+
+The block body is wrapped in a subshell so its `set -euo pipefail` and `exit` calls do not affect other hook code.
+
+Verify executable:
+
+```bash
+ls -la "$HOOKS_DIR/pre-commit"
 ```
 
 ## Step 4: Offer to create a project context file
@@ -100,7 +130,7 @@ Print a clear confirmation:
 
 ```
 ✅ Hook installed:
-   .git/hooks/pre-commit  — reviews staged frontend changes
+   .git/hooks/pre-commit  — reviews staged frontend changes (managed block)
 
 How it works:
   git commit
@@ -108,7 +138,27 @@ How it works:
     → BLOCKING:        commit aborted, fix and retry
     → WARNING + INFO:  reported but commit proceeds
 
+Re-running setup-hook is safe — only the managed block between
+"# >>> skill-feanor:pre-commit BEGIN" and "# <<< skill-feanor:pre-commit END"
+is replaced. Other hook content stays intact.
+
 Optional project context:
   - Edit .pr-review-context.md to add project-specific rules
   - Loaded automatically on every review — no configuration needed
 ```
+
+## Uninstall
+
+When the user asks to remove the hook ("uninstall the hook", "remove the pre-commit hook", "disable feanor"):
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/setup-hook/scripts/uninstall.sh"
+```
+
+Behavior:
+
+- Markers present → strips only content between BEGIN/END. If the remaining file has no meaningful content (only shebang/blanks), deletes the hook file entirely. Otherwise leaves other hook code in place.
+- No markers, legacy signature detected → asks for `y/N` confirmation, writes a `.legacy.<timestamp>.bak`, then deletes the hook.
+- No markers, no legacy signature → does nothing.
+
+Pass `--yes` to skip the legacy confirmation prompt.
