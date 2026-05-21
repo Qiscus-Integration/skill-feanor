@@ -34,6 +34,80 @@ Raw SQL or query fragments assembled in the view layer (even for display purpose
 Rails layouts that make AJAX requests require the CSRF token. The `<%= csrf_meta_tags %>` helper must be present in the `<head>` of full page layouts.
 - Only flag in layout files (`layouts/` directory or files that contain `<html>`/`<head>` structure)
 
+### ERB-B5: Multi-line helper call without parentheses
+When a Rails/Ruby helper call inside `<% %>` or `<%= %>` spans more than one line, wrap the arguments in parentheses. Parenless multi-line calls are ambiguous to parse, easy to misread, and break when later edits add a method chain or trailing argument.
+
+Single-line calls remain parenthesis-optional.
+
+```erb
+<%# ✓ ok — single line, parens optional %>
+<% render "shared/foo", name: :bar, required: true %>
+<%= link_to "Edit", edit_user_path(user), class: "btn" %>
+
+<%# ✗ flag — multi-line without parens %>
+<% render "shared/foo",
+   name: :bar,
+   required: true %>
+
+<%= form_with model: @user,
+              url: users_path,
+              local: true do |f| %>
+  ...
+<% end %>
+
+<%# ✓ ok — multi-line with parens, args broken onto new lines, `)` dedented %>
+<% render(
+  "shared/foo",
+  name: :bar,
+  required: true
+) %>
+
+<%= form_with(
+  model: @user,
+  url: users_path,
+  local: true
+) do |f| %>
+  ...
+<% end %>
+```
+
+- Applies to common Rails view helpers: `render`, `link_to`, `button_to`, `form_with`, `form_for`, `content_tag`, `tag`, `image_tag`, `image_pack_tag`, `javascript_pack_tag`, `stylesheet_link_tag`, `redirect_to`, `submit_tag`, and any helper invoked inside `<% %>` / `<%= %>`.
+- Do not flag: block-form helpers where the block itself spans lines but the argument list is on one line (e.g. `<%= form_with model: @user do |f| %>` followed by block body — the arguments are still single-line).
+- Do not flag: bare control flow (`if`, `unless`, `each do |x|`) — this rule targets method/helper calls with arguments.
+
+### ERB-B6: Multi-line helper call must use HTML-block indentation
+When a Rails/Ruby helper call inside `<% %>` / `<%= %>` spans multiple lines, format it like an HTML block: break after the opening `(`, indent each argument one level (2 spaces) deeper than the opening ERB tag, and place the closing `)` on its own line at the **same indentation column** as the opening `<%` / `<%=`. Treat the helper call's `(...)` as a block whose opening and closing tokens align — same convention as paired HTML tags.
+
+Single-line helper calls are unaffected.
+
+```erb
+<%# ✗ flag — args inline-aligned to opening paren, `)` trailing %>
+<%= form_with(model: @user,
+              url: users_path,
+              local: true) do |f| %>
+  <%= f.text_field :name %>
+<% end %>
+
+<%# ✗ flag — `)` not dedented to column of <%= %>
+<%= form_with(
+      model: @user,
+      url: users_path
+    ) do |f| %>
+  <%= f.text_field :name %>
+<% end %>
+
+<%# ✓ ok — break after `(`, args indented 2 spaces, `)` aligned with <%= %>
+<%= form_with(
+  model: @user,
+  url: users_path
+) do |f| %>
+  <%= f.text_field :name %>
+<% end %>
+```
+
+- Indent inside the call is **2 spaces from the column of the opening ERB tag**, not aligned to the opening `(`.
+- Do not flag single-line calls regardless of length.
+
 ---
 
 ## WARNING

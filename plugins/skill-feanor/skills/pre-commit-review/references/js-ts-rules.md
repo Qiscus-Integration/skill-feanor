@@ -270,6 +270,37 @@ const priceInCents = Math.round(price * 100);
 - Flag: `/* ... */` comments (per JT-B22, `//` is for commented-out code) whose text is a plain restatement of the immediately following line or block — paraphrases of the identifier names, action verbs that mirror the method being called, or labels that repeat the variable being assigned
 - Do not flag: comments that explain intent, reasoning, constraints, or context that is not derivable from the code itself
 
+### JT-B24: Redundant type coercion
+Calls to `parseInt`, `parseFloat`, `Number()`, `String()`, `Boolean()`, or template-literal/unary-plus coercion are redundant when the argument is already the target type. Remove the wrapper.
+
+Flag **only when the argument type is statically obvious**:
+1. A literal of the target type (e.g. `parseInt(42, 10)`, `String("hi")`, `Number(3.14)`).
+2. A TypeScript variable whose declared/inferred type matches the coercion target (e.g. `String(name)` where `name: string`).
+3. The result of another coercion to the same type (e.g. `String(String(x))`, `Number(parseInt(x, 10))`).
+4. A template literal wrapping a single string variable with no surrounding text: `` `${name}` `` where `name` is already a string.
+
+```js
+// ✗ flag — argument already correct type
+const n = parseInt(42, 10);          // 42 is already a number
+const s = String("hello");           // already a string
+const t = `${title}`;                // title is already string -> just use `title`
+const x = +someNumber;               // already number
+const b = Boolean(isReady);          // isReady: boolean
+
+// ✓ ok — coercion is meaningful
+const n = parseInt(input.value, 10); // input.value is string
+const s = String(count);             // count is number
+const t = `${prefix}-${id}`;         // interpolation needs literal
+const b = Boolean(maybeUndefined);   // narrowing from unknown/any
+```
+
+**Do not flag** — these change semantics or handle dirty input:
+- `parseInt(str, 10)` / `parseFloat(str)` on strings — strips trailing non-digits (e.g. `"100px"` → `100`); not equivalent to `Number(str)` or `+str`.
+- `Number("")` vs `parseInt("", 10)` — different results (`0` vs `NaN`).
+- `String(obj)` where `obj` may be `null`/`undefined`/`Symbol` — converts safely; `` `${obj}` `` may throw on `Symbol`.
+- `Boolean(x)` / `!!x` on non-boolean — that's narrowing, not redundant.
+- Any case where the static type cannot be proven (untyped JS variable from external source, `any`, `unknown`, function return without annotation).
+
 ---
 
 ## WARNING

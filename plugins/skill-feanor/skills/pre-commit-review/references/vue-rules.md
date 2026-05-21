@@ -33,6 +33,53 @@ methods: {
 ```
 - Fix: emit an event and let the parent update, or use a local `data` copy initialized from the prop
 
+### VUE-B4: Multi-line template element must use HTML-block indentation
+When a template element's opening tag spans multiple lines (attributes, directives, or bindings broken across lines), format it like a block: break after `<tagname`, indent each attribute/directive one level (2 spaces) deeper than the tag's column, and place the closing `>` (or `/>` for self-closing) on its own line at the **same indentation column** as the opening `<`. Opening `<` and closing `>` align.
+
+Single-line elements are unaffected.
+
+```html
+<!-- ✗ flag — attrs inline-aligned to first attr, `>` trailing -->
+<UserCard :name="user.name"
+          :avatar="user.avatar"
+          @click="handleClick"
+          v-if="user">
+  <Badge />
+</UserCard>
+
+<!-- ✗ flag — `>` not dedented to column of opening `<` -->
+<UserCard
+    :name="user.name"
+    :avatar="user.avatar"
+    @click="handleClick"
+    >
+  <Badge />
+</UserCard>
+
+<!-- ✓ ok — break after `<UserCard`, attrs indented 2 spaces, `>` aligned with `<` -->
+<UserCard
+  :name="user.name"
+  :avatar="user.avatar"
+  @click="handleClick"
+  v-if="user"
+>
+  <Badge />
+</UserCard>
+
+<!-- ✓ ok — self-closing form, `/>` aligned with `<` -->
+<BaseIcon
+  name="check"
+  size="lg"
+  :spin="loading"
+/>
+
+<!-- ✓ ok — single-line element, no alignment concern -->
+<UserCard :name="user.name" @click="handleClick" />
+```
+
+- Indent inside the tag is **2 spaces from the column of the opening `<`**, not aligned to the first attribute.
+- Do not flag single-line elements regardless of attribute count.
+
 ---
 
 ## WARNING

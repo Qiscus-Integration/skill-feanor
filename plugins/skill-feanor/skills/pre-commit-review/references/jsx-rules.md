@@ -26,6 +26,50 @@ This prop bypasses React's XSS protection and injects raw HTML. Every usage must
 Using `document.getElementById`, `document.querySelector`, or `document.createElement` inside component logic (not in a utility helper) bypasses React's reconciler and causes state/DOM desync.
 - Fix: use `useRef` and the ref's `.current` property
 
+### JSX-B4: Multi-line JSX element must use HTML-block indentation
+When a JSX element's opening tag spans multiple lines (props broken across lines), format it like a block: break after `<ComponentName`, indent each prop one level (2 spaces) deeper than the tag's column, and place the closing `>` (or `/>` for self-closing) on its own line at the **same indentation column** as the opening `<`. Opening `<` and closing `>` align.
+
+Single-line elements are unaffected.
+
+```jsx
+// ✗ flag — props inline-aligned to first prop, `/>` trailing
+<UserCard name={user.name}
+          avatar={user.avatar}
+          onClick={handleClick}
+          highlighted />
+
+// ✗ flag — `>` not dedented to column of opening `<`
+<UserCard
+    name={user.name}
+    avatar={user.avatar}
+    onClick={handleClick}
+    >
+  <Badge />
+</UserCard>
+
+// ✓ ok — break after `<UserCard`, props indented 2 spaces, `/>` aligned with `<`
+<UserCard
+  name={user.name}
+  avatar={user.avatar}
+  onClick={handleClick}
+  highlighted
+/>
+
+// ✓ ok — opening tag of paired element, `>` aligned with `<`
+<UserCard
+  name={user.name}
+  avatar={user.avatar}
+>
+  <Badge />
+</UserCard>
+
+// ✓ ok — single-line element, no alignment concern
+<UserCard name={user.name} onClick={handleClick} />
+```
+
+- Indent inside the tag is **2 spaces from the column of the opening `<`**, not aligned to the first prop.
+- Do not flag single-line elements regardless of prop count.
+
 ---
 
 ## WARNING

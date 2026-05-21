@@ -24,6 +24,48 @@ Every form input (text, email, password, checkbox, radio, select, textarea) must
 `href="javascript:void(0)"` and similar patterns are a security smell and cause CSP violations in strict environments.
 - Fix: use `<button>` for actions, proper `<a href>` for navigation
 
+### H-B5: Multi-line tag must use HTML-block indentation
+When an HTML tag's opening spans multiple lines (attributes broken across lines), format it like a block: break after `<tagname`, indent each attribute one level (2 spaces) deeper than the tag's column, and place the closing `>` (or `/>` for self-closing) on its own line at the **same indentation column** as the opening `<`. Opening `<` and closing `>` align — same convention as paired HTML tags themselves.
+
+Single-line tags are unaffected.
+
+```html
+<!-- ✗ flag — attrs inline-aligned to first attr, `>` trailing -->
+<input type="text"
+       name="username"
+       placeholder="Enter name"
+       required>
+
+<!-- ✗ flag — `>` not dedented to column of opening `<` -->
+<input
+    type="text"
+    name="username"
+    required
+    >
+
+<!-- ✓ ok — break after `<input`, attrs indented 2 spaces, `>` aligned with `<` -->
+<input
+  type="text"
+  name="username"
+  placeholder="Enter name"
+  required
+>
+
+<!-- ✓ ok — self-closing form, `/>` aligned with `<` -->
+<img
+  src="/avatar.png"
+  alt="User avatar"
+  width="48"
+  height="48"
+/>
+
+<!-- ✓ ok — single-line tag, no alignment concern -->
+<input type="text" name="username" required>
+```
+
+- Indent inside the tag is **2 spaces from the column of the opening `<`**, not aligned to the first attribute.
+- Do not flag single-line tags regardless of attribute count.
+
 ---
 
 ## WARNING
