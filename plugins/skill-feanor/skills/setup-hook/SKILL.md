@@ -6,7 +6,7 @@ description: >
   "add the git hook", or "how do I activate this in my project". Run once per repo.
   Idempotent — re-running only refreshes the managed block.
 metadata:
-  version: "0.5.0"
+  version: "0.6.0"
 ---
 
 Install a git pre-commit hook that reviews staged frontend changes. BLOCKING issues abort the commit; WARNING and INFO are reported but do not block.

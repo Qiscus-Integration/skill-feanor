@@ -1,6 +1,6 @@
 {
   "name": "skill-feanor",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Frontend-focused pre-commit code review. Catches BLOCKING, WARNING, and INFO issues in HTML, JS, TS, JSX, Vue, and ERB at commit time — so manual reviewers only handle complex changes.",
   "author": {
     "name": "Qiscus"

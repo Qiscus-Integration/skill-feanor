@@ -1,16 +1,19 @@
 ---
 name: pre-commit-review
 description: >
-  Review frontend code changes at commit time. Use when the user says
+  Review frontend code changes at commit time, or audit a single file on demand. Use when the user says
   "review my changes before committing", "run pre-commit review", "check my staged changes",
-  "run feanor review", or when invoked automatically by the git pre-commit hook. Covers
-  HTML, JavaScript, TypeScript, JSX/TSX, Vue single-file components, and HTML ERB templates.
+  "run feanor review", "feanor review <path>", or when invoked automatically by the git pre-commit hook.
+  Covers HTML, JavaScript, TypeScript, JSX/TSX, Vue single-file components, and HTML ERB templates.
 metadata:
-  version: "0.5.0"
+  version: "0.6.0"
   supported-types: "html, js, ts, jsx, tsx, vue, erb"
 ---
 
-Review staged frontend code changes and produce a severity-categorized report. Single mode: invoked by the git pre-commit hook, applies BLOCKING, WARNING, and INFO rules from the reference files. BLOCKING issues abort the commit; WARNING and INFO are reported but do not block.
+Review frontend code and produce a severity-categorized report. Two modes:
+
+- **Hook mode (default)** — invoked by the git pre-commit hook with no file argument. Reviews staged diff. BLOCKING issues abort the commit; WARNING and INFO are reported but do not block.
+- **File mode** — invoked when the user names a specific path (e.g. "feanor review src/foo.tsx"). Reviews the full file content top-to-bottom. Advisory only — no `COMMIT_STATUS` line.
 
 ## Fail-closed contract
 
@@ -29,7 +32,15 @@ A diff being "trivial" (single comment, whitespace-only, etc.) is NOT grounds to
 
 ---
 
-## Step 1: Get staged changes
+## Step 1: Determine mode and collect content
+
+**File mode** — if the user named one or more file paths (e.g. "feanor review src/foo.tsx"):
+
+1. Resolve each path relative to the repo root. If a path does not exist or is not a supported type (see file-type mapping below), report it and skip.
+2. Read the full content of each file with the `Read` tool. Skip files matched by the **Skip entirely** list in the Shared rules section.
+3. Proceed to Step 2 with the full file content as the review target. **Do not** run `git diff`.
+
+**Hook mode** — no file path given:
 
 ```bash
 git diff --cached -- '*.html' '*.js' '*.mjs' '*.cjs' '*.ts' '*.tsx' '*.jsx' '*.vue' '*.erb'
@@ -60,6 +71,8 @@ Apply project-specific rules from `.pr-review-context.md` if present.
 
 ## Step 3: Output
 
+**Hook mode**:
+
 ```
 ╔══════════════════════════════════════════╗
 ║     Frontend Pre-Commit Review Report    ║
@@ -89,11 +102,19 @@ WARNING and INFO are non-blocking suggestions.>
 COMMIT_STATUS: BLOCKED
 ```
 
-Status line rules:
+Status line rules (hook mode only):
 - Print `COMMIT_STATUS: BLOCKED` if there is at least one BLOCKING issue.
 - Print `COMMIT_STATUS: PASSED` if there are zero BLOCKING issues (WARNING and INFO do not block).
 - If a section has zero items, omit the section header entirely.
 - The status line must be the very last line of output with no trailing whitespace or blank lines.
+
+**File mode**:
+
+Use the same header, sections, and severity formatting, but:
+- Replace the `Files staged` line with `Files reviewed`.
+- Replace the report title with `Frontend File Review Report`.
+- Omit the `COMMIT_STATUS` line entirely — file mode is advisory.
+- The SUMMARY should describe the findings without referring to commits.
 
 ---
 

@@ -30,7 +30,7 @@ git push → PR review focused on complex changes only
 ## Skills
 
 ### `pre-commit-review`
-The core review skill. Triggered automatically by the pre-commit hook, or manually by asking Claude to "review my staged changes".
+The core review skill. Triggered automatically by the pre-commit hook, or manually by asking Claude to "review my staged changes". For a one-off audit of any single file, ask "feanor review <path>" — the skill reads the full file (not the staged diff), applies the same rules, and reports findings advisorily (no commit gating).
 
 Covers:
 - **HTML** — accessibility (alt, labels, roles), semantic structure, inline styles, heading hierarchy
