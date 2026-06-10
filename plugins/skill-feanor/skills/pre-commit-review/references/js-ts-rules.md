@@ -47,10 +47,11 @@ Use double quotes for all string literals. Single quotes are only acceptable in 
 2. The string is **nested inside a template-literal interpolation** (`${...}`) where the outer template uses backticks. Switching to double quotes here would clash with surrounding attribute or string delimiters.
 3. The string is **nested inside a double-quoted attribute or string** where doubling up would require escaping (e.g., HTML/JSX/Vue attributes, JSON-in-string).
 
-Template literals (backticks) are allowed only when string interpolation is needed.
+Template literals (backticks) are allowed when string interpolation is needed, OR when the string contains double quotes that would otherwise require escaping.
 ```js
 console.log("hello there");                                   // ✓ ok
 console.log(`hello ${name}`);                                 // ✓ ok — interpolation
+console.log(`[data-fselect-target="field"]`);                 // ✓ ok — embedded double quotes, no escaping
 console.log('hello there');                                   // ✗ flag
 console.log(`hello there`);                                   // ✗ flag — no interpolation needed
 
