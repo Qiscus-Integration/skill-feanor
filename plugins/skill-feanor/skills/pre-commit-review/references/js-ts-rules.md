@@ -238,6 +238,7 @@ function calcTotal(items) { ... }
 - Flag: `//` lines in newly added code where the content reads as natural language explanation (starts with a capital letter, forms a sentence, describes intent) rather than disabled code
 - Do not flag: `//` lines whose content looks like code syntax (starts with a keyword, function call, variable declaration, etc.)
 - Do not flag: `// eslint-disable`, `// @ts-expect-error`, `// TODO`, `// FIXME`, or other tool-directive comments
+- Explanations spanning multiple lines must additionally follow JT-B25 (starred block form), not a stack of consecutive `//` lines
 
 ### JT-B23: Redundant or obvious comments
 Do not add comments that merely restate what the code already clearly expresses. If a reader can understand what a line or block does just by reading it, the comment adds noise rather than value.
@@ -301,6 +302,48 @@ const b = Boolean(maybeUndefined);   // narrowing from unknown/any
 - `String(obj)` where `obj` may be `null`/`undefined`/`Symbol` — converts safely; `` `${obj}` `` may throw on `Symbol`.
 - `Boolean(x)` / `!!x` on non-boolean — that's narrowing, not redundant.
 - Any case where the static type cannot be proven (untyped JS variable from external source, `any`, `unknown`, function return without annotation).
+
+### JT-B25: Multi-line block comment not in starred (JSDoc-style) form
+A comment whose text spans more than one line must use the starred block form: `/**` alone on the opening line, every content line prefixed with ` * `, and `*/` alone on the closing line, with all `*` characters vertically aligned under the first `*` of `/**`. The flat form (text starting on the `/*` line, continuation lines indented with spaces, `*/` trailing the last text line) is not accepted.
+
+```js
+/* ✗ flag — flat multi-line comment, text on the /* line, no leading stars */
+/* Price is stored in cents to avoid floating-point rounding
+   errors when totals are summed across many line items */
+const priceInCents = Math.round(price * 100);
+
+/* ✗ flag — starred body but opener/closer share lines with text */
+/* Price is stored in cents to avoid floating-point rounding
+ * errors when totals are summed across many line items */
+const priceInCents = Math.round(price * 100);
+
+/* ✓ ok */
+/**
+ * Price is stored in cents to avoid floating-point rounding
+ * errors when totals are summed across many line items
+ */
+const priceInCents = Math.round(price * 100);
+```
+
+Single-line comments stay flat — do **not** expand them into the starred form:
+```js
+/* ✓ ok — one line, keep it as one line */
+/* Price is stored in cents to avoid floating-point rounding errors */
+
+/* ✗ flag — needless three-line wrapper for one line of text */
+/**
+ * Price is stored in cents to avoid floating-point rounding errors
+ */
+```
+
+- Flag: any newly added or modified block comment with two or more lines of comment text that is missing a bare `/**` opener, missing a ` * ` prefix on any content line, or has `*/` on the same line as text
+- Flag: misaligned continuation stars (the ` * ` must line up with the `*` in `/**`, i.e. one space of extra indent relative to `/*`)
+- Flag: a single-line comment padded into the starred three-line form
+- Do not flag: `/* ... */` comments that fit on one line
+- Do not flag: existing pre-existing comments untouched by the diff
+- Do not flag: license/copyright banners at the top of a file, or generated-file headers
+- Do not flag: comment content itself for wording — that is JT-B23's scope
+- Fix suggestion: rewrite the comment into the starred form; do not reflow the prose or shorten the text as part of this fix
 
 ---
 
