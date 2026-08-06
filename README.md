@@ -33,11 +33,11 @@ git push → PR review focused on complex changes only
 The core review skill. Triggered automatically by the pre-commit hook, or manually by asking Claude to "review my staged changes". For a one-off audit of any single file, ask "feanor review <path>" — the skill reads the full file (not the staged diff), applies the same rules, and reports findings advisorily (no commit gating).
 
 Covers:
-- **HTML** — accessibility (alt, labels, roles), semantic structure, inline styles, heading hierarchy
+- **HTML** — accessibility (alt, labels, roles), semantic structure, inline styles, heading hierarchy, multi-line tag indentation
 - **JavaScript / TypeScript** — debugger statements, hardcoded secrets, empty catch blocks, console.log, `any` type, `@ts-ignore`, fire-and-forget async, `var` usage
 - **JSX / React** — missing keys in lists, `dangerouslySetInnerHTML`, missing effect dependencies, inline object/array props, component-in-render
 - **Vue SFCs** — `v-for` without `:key`, `v-html`, prop mutation, `$parent` access, props without types
-- **HTML ERB** — `raw()` / `.html_safe` XSS, unescaped JS interpolation, N+1 query patterns, hardcoded routes, logic in views
+- **HTML ERB** — `raw()` / `.html_safe` XSS, unescaped JS interpolation, N+1 query patterns, hardcoded routes, logic in views, multi-line helper call indentation — plus every HTML rule above, applied to the markup
 
 Issues are reported in three severities, all surfaced at commit time:
 - **BLOCKING** — commit is aborted until fixed
@@ -166,11 +166,11 @@ Rules live in plain markdown files inside `plugins/skill-feanor/skills/pre-commi
 
 | File | Rules for |
 |------|-----------|
-| `plugins/skill-feanor/skills/pre-commit-review/references/html-rules.md` | HTML |
+| `plugins/skill-feanor/skills/pre-commit-review/references/html-rules.md` | HTML, HTML ERB (markup) |
 | `plugins/skill-feanor/skills/pre-commit-review/references/js-ts-rules.md` | JS, TS, JSX, TSX, Vue (script block) |
 | `plugins/skill-feanor/skills/pre-commit-review/references/jsx-rules.md` | JSX / React specific |
 | `plugins/skill-feanor/skills/pre-commit-review/references/vue-rules.md` | Vue SFC specific |
-| `plugins/skill-feanor/skills/pre-commit-review/references/erb-rules.md` | HTML ERB |
+| `plugins/skill-feanor/skills/pre-commit-review/references/erb-rules.md` | HTML ERB specific (Ruby side) |
 
 **Contribution workflow:**
 

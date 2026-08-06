@@ -1,6 +1,8 @@
 # HTML ERB Template Review Rules
 
-Apply these rules to `.html.erb` and `.erb` files.
+Apply these rules to `.html.erb` and `.erb` files, in addition to `html-rules.md` for the markup those templates emit.
+
+Split of responsibility: `html-rules.md` governs the HTML tags (accessibility, semantics, multi-line tag layout). The rules below govern the Ruby side — ERB tags, helper calls, and template-layer logic. Both sets can produce findings in the same file.
 
 ---
 
@@ -107,6 +109,7 @@ Single-line helper calls are unaffected.
 
 - Indent inside the call is **2 spaces from the column of the opening ERB tag**, not aligned to the opening `(`.
 - Do not flag single-line calls regardless of length.
+- This rule governs Ruby helper calls only. A multi-line raw HTML tag (`<button ...>`, `<input ...>`) is governed by H-B5 in `html-rules.md` instead — both rules can fire in the same file.
 
 ---
 

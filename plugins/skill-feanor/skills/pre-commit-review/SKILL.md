@@ -6,7 +6,7 @@ description: >
   "run feanor review", "feanor review <path>", or when invoked automatically by the git pre-commit hook.
   Covers HTML, JavaScript, TypeScript, JSX/TSX, Vue single-file components, and HTML ERB templates.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
   supported-types: "html, js, ts, jsx, tsx, vue, erb"
 ---
 
@@ -63,7 +63,7 @@ Apply every rule from the corresponding reference files, regardless of severity:
 - JS / TS → `references/js-ts-rules.md`
 - JSX / TSX → `references/js-ts-rules.md` + `references/jsx-rules.md`
 - Vue → `references/js-ts-rules.md` + `references/vue-rules.md`
-- ERB → `references/erb-rules.md`
+- ERB → `references/html-rules.md` + `references/erb-rules.md`
 
 Apply project-specific rules from `.pr-review-context.md` if present.
 

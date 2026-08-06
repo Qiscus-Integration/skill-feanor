@@ -1,6 +1,8 @@
 # HTML Review Rules
 
-Apply these rules to `.html` files (non-ERB). For ERB, use `erb-rules.md`.
+Apply these rules to `.html` files. They also apply as a base layer to the markup in `.html.erb` and `.erb` files — read `erb-rules.md` for additional ERB-specific rules.
+
+In ERB files, attribute values may be static, `<%= %>` interpolation, or a mix of both. Every rule below is about markup structure, not attribute content — an interpolated value does not exempt a tag. Attributes contributed by client-side frameworks (`x-data`, `@click`, `:class`, `data-controller`, `data-*-target`) are ordinary attributes for the purposes of these rules.
 
 ---
 
@@ -10,15 +12,19 @@ Apply these rules to `.html` files (non-ERB). For ERB, use `erb-rules.md`.
 Every `<img>` tag must have an `alt` attribute. Missing alt is an accessibility violation and fails WCAG 2.1 AA.
 - Flag: `<img` without `alt=`
 - Exception: decorative images should use `alt=""` (empty string is valid)
+- ERB: also flag `image_tag` / `image_pack_tag` calls with no `alt:` key
 
 ### H-B2: Interactive `<div>` or `<span>` without role and keyboard handler
 A `<div>` or `<span>` with an `onclick` handler but no `role` attribute and no `onkeydown`/`onkeypress` is a keyboard accessibility blocker.
 - Flag: `<div onclick=` or `<span onclick=` without accompanying `role=` and keyboard event
+- A framework click binding counts as a click handler here: `@click` / `v-on:click` (Alpine, Vue), `data-action="click->..."` (Stimulus), `onClick` (JSX)
 - Fix: use a semantic `<button>` or `<a>` element instead
 
 ### H-B3: Form `<input>` without associated `<label>`
 Every form input (text, email, password, checkbox, radio, select, textarea) must have an associated label via `<label for="id">` or wrapping `<label>`.
 - Exception: inputs with `aria-label` or `aria-labelledby` are acceptable
+- Exception: `type="hidden"` and `type="submit"` / `type="button"` inputs need no label
+- ERB: Rails form-builder fields (`f.text_field :name`, `text_field_tag :q`) are inputs too — they need a matching `f.label` / `label_tag`, or an `aria-label`
 
 ### H-B4: `javascript:` protocol in `href` or `src`
 `href="javascript:void(0)"` and similar patterns are a security smell and cause CSP violations in strict environments.
@@ -63,8 +69,34 @@ Single-line tags are unaffected.
 <input type="text" name="username" required>
 ```
 
+The same layout applies to raw HTML tags inside ERB templates, whatever the attributes hold:
+
+```erb
+<%# ✗ flag — attrs inline-aligned to first attr, `>` trailing %>
+<button type="button"
+        class="flex items-center gap-1 text-xs"
+        x-data="ticketModerationActions"
+        @click="deleteToTrash({ formId: 'bulk-delete-spam' })">
+
+<%# ✓ ok — break after `<button`, attrs indented 2 spaces, `>` aligned with `<` %>
+<button
+  type="button"
+  class="flex items-center gap-1 text-xs"
+  x-data="ticketModerationActions"
+  @click="deleteToTrash({ formId: 'bulk-delete-spam' })"
+>
+
+<%# ✓ ok — interpolated attribute values change nothing about the layout %>
+<a
+  href="<%= edit_user_path(user) %>"
+  class="<%= active ? 'font-bold' : '' %>"
+  data-turbo-frame="modal"
+>
+```
+
 - Indent inside the tag is **2 spaces from the column of the opening `<`**, not aligned to the first attribute.
-- Do not flag single-line tags regardless of attribute count.
+- Do not flag single-line tags regardless of attribute count or line length.
+- This rule governs markup tags only. A multi-line Ruby helper call (`form_with(...)`, `link_to(...)`) is governed by ERB-B6 instead — both rules can fire in the same file.
 
 ---
 
@@ -80,11 +112,12 @@ Headings must not skip levels (e.g., `<h1>` followed directly by `<h3>`). Each p
 
 ### H-W3: Inline `style` attribute
 Inline styles couple presentation to markup and make theming and overrides harder.
-- Exception: dynamically computed styles set from JavaScript (e.g., `style="width: {{ width }}px"`) are acceptable
+- Exception: dynamically computed styles are acceptable — `style="width: {{ width }}px"`, `style="width: <%= pct %>%"`, `:style`, `style={{ ... }}`
 - Flag: static inline styles like `style="color: red; font-weight: bold"`
 
 ### H-W4: Empty `href="#"` on anchor tags
 `<a href="#">` scrolls to the top of the page, which is usually unintended. Use `<button>` for actions.
+- ERB: `link_to "Delete", "#"` is the same smell — prefer `button_to` or a real path helper
 
 ### H-W5: Missing `lang` attribute on `<html>` tag
 The root `<html>` element should declare a `lang` attribute (e.g., `lang="en"`) for screen reader support.
